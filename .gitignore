@@ -1,0 +1,8 @@
+# Node modules
+node_modules/
+
+# Environment file
+.env
+
+# Text file
+text
