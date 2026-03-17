@@ -1,6 +1,7 @@
 const slidingWindow = require('../algorithm/slidingWindow');
 const handleViolation = require('../services/abuse.services');
 const tokenBucket = require("../algorithm/tokenBucket");
+const rateLimitConfig = require('../config/ratelimitConfig');
 
 //combined sliding window and token bucket for robust rate limiting
 //Token Bucket → allows short bursts
@@ -8,26 +9,35 @@ const tokenBucket = require("../algorithm/tokenBucket");
 async function rateLimiter(req, res, next) {
   try {
     const ip = req.ip;
+     // Get role (default FREE)
+    const role = req.headers["x-role"] || "FREE";
 
+    const config = rateLimitConfig[role] || rateLimitConfig["FREE"];
     // Step 1: Token Bucket (burst control)
-    const tokenAllowed = await tokenBucket(ip, 10, 1);
+    
+    const tokenAllowed = await tokenBucket(
+      ip,
+      config.tokenBucket.capacity,
+      config.tokenBucket.refillRate
+    );
 
     if (!tokenAllowed) {
       await handleViolation(ip);
-
       return res.status(429).json({
-        error: "Burst limit exceeded"
+        error: `Burst limit exceeded for role ${role}`
       });
     }
-
     // Step 2: Sliding Window (sustained rate control)
-    const slidingAllowed = await slidingWindow(ip, 20, 60);
+     const slidingAllowed = await slidingWindow(
+      ip,
+      config.slidingWindow.limit,
+      config.slidingWindow.window
+    );
 
     if (!slidingAllowed) {
       await handleViolation(ip);
-
       return res.status(429).json({
-        error: "Rate limit exceeded"
+        error: `Rate limit exceeded for role ${role}`
       });
     }
 
@@ -37,5 +47,4 @@ async function rateLimiter(req, res, next) {
     next();
   }
 }
-
 module.exports = rateLimiter;
