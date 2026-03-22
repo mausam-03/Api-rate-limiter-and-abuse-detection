@@ -10,10 +10,15 @@ async function handleViolation(ip){
     if(count == 1){
         await redisClient.expire(violationKey, 60);
     }
-    // if too many violations -> ban 
-    if(count >=3){
-        await redisClient.set(`ban:${ip}`, "true", {EX: 300}); // ban for 5 minutes
-        console.log(`IP ${ip} bannded for abuse`);
-    }
+   if (count >= 3) {
+    const banKey = `ban:${ip}`;
+
+    await redisClient.set(banKey, "true", { EX: 300 });
+
+    // Add to banned set
+    await redisClient.sAdd("banned_ips", ip);
+
+    console.log(`IP ${ip} banned for abuse`);
+ }
 }
  module.exports = handleViolation;
