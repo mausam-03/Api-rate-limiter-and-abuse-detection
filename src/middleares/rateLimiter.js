@@ -1,4 +1,4 @@
-const slidingWindow = require('../algorithm/slidingWindow');
+const slidingWindow = require('../algorithm/slidingWindowLua');
 const handleViolation = require('../services/abuse.services');
 const tokenBucket = require("../algorithm/tokenBucket");
 const rateLimitConfig = require('../config/ratelimitConfig');
